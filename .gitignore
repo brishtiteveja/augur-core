@@ -61,5 +61,3 @@ serpent/ui
 .gitstats
 *.mw
 serpent/old-tests
-serpent
-python
