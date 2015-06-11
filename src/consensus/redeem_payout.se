@@ -1,6 +1,6 @@
 # This software (Augur) allows buying and selling event options in Ethereum.
 #
-# Copyright (c) 2015 Forecast Foundation 
+# Copyright (c) 2015 Forecast Foundation
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -70,7 +70,7 @@ def payout(branch, period, num_events, num_reports, flatsize):
                                     CASH.addCash(branch, BOND)
                             j += 1
                     # - need to loop through rep holders && distribute 50% of branch fees to
-                    #   reporters' cashcoin addresses 
+                    #   reporters' cashcoin addresses
                     # - also need to take reporter_payouts && redistribute reputation in the
                     #   Reporting structure accordingly
                     with i = 0:
@@ -82,6 +82,6 @@ def payout(branch, period, num_events, num_reports, flatsize):
                         CASH.subtractCash(branch, CASH.balance(branch))
                         return(1)
 
-inset('../macros/constants.se')
-inset('../macros/fixed.se')
-inset('../macros/arrays.se')
+inset('macros/constants.se')
+inset('macros/fixed.se')
+inset('macros/arrays.se')

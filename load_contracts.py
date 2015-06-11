@@ -8,6 +8,7 @@ import sys
 import json
 import time
 
+FROM_DB = False
 RPC = None
 COINBASE = None
 TRIES = 10
@@ -93,6 +94,19 @@ def get_compile_order():
                 nodes.pop(item)
     return sorted_nodes
 
+def get_info(name):
+    if FROM_DB:
+        return json.loads(DB[name])
+    else:
+        return INFO[name]
+
+def set_info(name, val):
+    if FROM_DB:
+        DB[name] = json.dumps(val)
+        DB.sync()
+    else:
+        INFO[name] = val
+
 def translate_code_with_imports(fullname):
     new_code = []
     for line in open(fullname):
@@ -100,7 +114,7 @@ def translate_code_with_imports(fullname):
         if line.startswith('import'):
             line = line.split(' ')
             name, sub = line[1], line[3]
-            info = INFO[name]
+            info = get_info(name)
             new_code.append(info['sig'])
             new_code.append(sub + ' = ' + info['address'])
         else:
@@ -113,9 +127,10 @@ def translate_code_with_externs(fullname):
     for i, line in enumerate(open(fullname)):
         line = line.rstrip()
         if line.startswith('extern'):
+            print line
             last_extern = i
             name = line[line.find(' ')+1:line.find(':')][:-3]
-            info = INFO[name]
+            info = get_info(name)
             new_code.append(info['sig'])
         elif i == last_extern + 1:
             sub = line.split(' ')[0]
@@ -129,20 +144,21 @@ def compile(fullname):
         new_code = translate_code_with_externs(fullname)
     else:
         new_code = translate_code_with_imports(fullname)
-    print new_code
+#    print new_code
     evm = '0x' + serpent.compile(new_code).encode('hex')
     new_address = broadcast_code(evm)
     short_name = os.path.split(fullname)[-1][:-3]
     new_sig = serpent.mk_signature(new_code).replace('main', short_name, 1)
     fullsig = serpent.mk_full_signature(new_code)
     new_info = {'address':new_address, 'sig':new_sig, 'fullsig':fullsig}
-    INFO[short_name] = new_info
+    set_info(short_name, new_info)
 
 def main():
     global BLOCKTIME
     global USE_EXTERNS
     global RPC
     global COINBASE
+    global FROM_DB
     start = 0
     verbose = False
     debug = False
@@ -150,6 +166,7 @@ def main():
         if arg.startswith('--BLOCKTIME='):
             BLOCKTIME = float(arg.split('=')[1])
         if arg.startswith('--contract='):
+            FROM_DB = True
             start = arg.split('=')[1]
         if arg == '--use-externs':
             USE_EXTERNS = True
@@ -166,13 +183,14 @@ def main():
         fullname = get_fullname(deps[i])
         print "compiling", fullname
         compile(fullname)
-    sys.stdout.write('dumping new addresses to DB')
-    sys.stdout.flush()
-    for k, v in INFO.items():
-        DB[k] = json.dumps(v)
-        sys.stdout.write('.')
+    if not FROM_DB:
+        sys.stdout.write('dumping new addresses to DB')
         sys.stdout.flush()
-    print
+        for k, v in INFO.items():
+            DB[k] = json.dumps(v)
+            sys.stdout.write('.')
+            sys.stdout.flush()
+        print
     return 0
 
 if __name__ == '__main__':
